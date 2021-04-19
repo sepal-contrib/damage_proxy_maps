@@ -1,0 +1,11 @@
+{
+    "app": {
+        "title": "Damage Proxy Map",
+        "drawer_item" : {
+            "aoi": "AOI selector",
+            "process": "Process",
+            "result": "Results",
+            "about": "About"
+        }
+    }
+}
