@@ -2,6 +2,8 @@
 
 ### Damage Proxy Maps based on Coherence Change Detection.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
+
 This module provides a fully-automated workflow for the creation of Damage Proxy Maps based on the method of Coherent Change Detection (CCD) with Sentinel-1 SLC data as described by [Tay et al. 2020](https://www.nature.com/articles/s41597-020-0443-5). 
 
 The output data files consist of the Damage Proxy Map as GeoTiff (*dmp_...tif*) and KMZ (*dmp_...kmz*) file, as well as the raw CCD values in GeoTiff (*CCD_...tif*) and GeoJSON (*CCD_...geojson*) format. 
