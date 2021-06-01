@@ -1,1 +1,1 @@
-from .dmp_io import *
+from .dmp_model import *

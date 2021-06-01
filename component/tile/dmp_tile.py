@@ -7,27 +7,19 @@ from component.scripts import *
 
 class DmpTile(sw.Tile):
     
-    def __init__(self, model):
+    def __init__(self, model, aoi_model):
         
         # gather the io as class attribute 
+        self.aoi_model = aoi_model
         self.model = model
         
-        # create the widgets 
-        self.aoi = sw.Markdown(pm.aoi)
-        self.file_selector = sw.FileInput(label='Search File')
-        
-        self.date = sw.Markdown(pm.date)
+        # create widgets
         self.date_picker = sw.DatePicker(label='Disaster event date')
-        
-        self.scihub = sw.Markdown(pm.scihub)
         self.username = v.TextField(label = "Copernicus Scihub Username",v_model = None)
         self.password = sw.PasswordField(label = "Copernicus Scihub Password")
         
-        self.process = sw.Markdown(pm.process)
-        
         # bind them with the output 
         self.model \
-            .bind(self.file_selector, 'file') \
             .bind(self.date_picker, 'event') \
             .bind(self.username, 'username') \
             .bind(self.password, 'password')
@@ -36,13 +28,8 @@ class DmpTile(sw.Tile):
         super().__init__(
             id_ = "process_widget",
             title = "Set input parameters",
-            inputs = [
-                self.aoi, self.file_selector, 
-                self.date, self.date_picker, 
-                self.scihub, self.username, self.password,
-                self.process
-            ],
-            output = sw.Alert(),
+            inputs = [self.date_picker, self.username, self.password],
+            alert = sw.Alert(),
             btn = sw.Btn("Process")
         )
         
@@ -53,15 +40,14 @@ class DmpTile(sw.Tile):
     def _on_click(self, widget, data, event):
         
         ## check input file
-        if not self.output.check_input(self.model.file, 'no aoi file selected'): return 
-        if not self.output.check_input(self.model.event, 'no event date selected'): return 
-        if not self.output.check_input(self.model.username, 'no username'): return 
-        if not self.output.check_input(self.model.password, 'no password'): return 
+        if not self.alert.check_input(self.model.event, 'no event date selected'): return 
+        if not self.alert.check_input(self.model.username, 'no username'): return 
+        if not self.alert.check_input(self.model.password, 'no password'): return 
         
-        check_computer_size(self.output)
-        create_dmp(self.model, self.output)
+        check_computer_size()
+        create_dmp(self.aoi_model, self.model, self.alert)
 
-        self.output.add_live_msg('Computation complete', 'success')
+        self.alert.add_live_msg('Computation complete', 'success')
          
         return
         
