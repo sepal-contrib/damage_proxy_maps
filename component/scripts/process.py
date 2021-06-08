@@ -1,4 +1,5 @@
-import os, shutil
+import os
+import shutil
 import re
 import time
 
@@ -21,7 +22,7 @@ from ost import Sentinel1Batch
 
 from component import parameter as pm
 
-def check_computer_size(output):
+def check_computer_size():
     """check if the computer size will match the reuirements of the app"""
     
     # we get available ram
@@ -37,22 +38,8 @@ def check_computer_size(output):
         raise Exception('WARNING: You should run this notebook with an instance of at least 32Gb of Ram and 4 CPUs.')
         
     return
-
-
-def remove_folder_content(folder):
-    """A helper function that cleans the content of a folder
-
-    :param folder:
-    """
-
-    for root, dirs, files in os.walk(folder):
-        for f in files:
-            os.unlink(os.path.join(root, f))
-        for d in dirs:
-            shutil.rmtree(os.path.join(root, d))
-            
-            
-def create_dmp(io, output):
+                 
+def create_dmp(aoi_model, model, output):
     
     # create start date from 60 days before
     event_date = dt.strptime(io.event, '%Y-%m-%d')
@@ -61,13 +48,13 @@ def create_dmp(io, output):
     end = dt.strftime((event_date + timedelta(days=+30)), '%Y-%m-%d') 
     
     # define project dir 
-    aoi_name = Path(io.file).stem
-    project_dir = Path().home().joinpath(f'module_results/Damage_Proxy_Maps/{io.event}_{aoi_name}')
+    project_dir = pm.result_dir/f'{io.event}_{aoi_model.name}'
+    
     output.add_live_msg(' Setting up project')
     
     s1_slc = Sentinel1Batch(
         project_dir=project_dir,
-        aoi = io.file,
+        aoi = aoi_model.gdf.to_wkt(),
         start = start,
         end = end,
         product_type='SLC',
@@ -108,7 +95,7 @@ def create_dmp(io, output):
             continue
 
         output.add_live_msg(f' Including track {track} for processing')
-        # get only positives one (ie. after evtn)
+        # get only positives one (ie. after event)
         
         #### we ignore images at the same day? #### or do we include, i.e. >= 0
         image_days.append(sorted([int(d) for d in date_diff if int(d) > 0])[0])
@@ -250,8 +237,7 @@ def create_dmp(io, output):
                 dest.write(mosaic)
 
             # crop to aoi (some ost routine)
-            with fiona.open(io.file, "r") as shapefile:
-                shapes_ = [feature["geometry"] for feature in shapefile]
+            shapes_ = [row.geometry for _, row in aoi_model.gdf.iterrows()]
 
             with rio.open(tmp_mrg) as src:
                 out_image, out_transform = rio.mask.mask(src, shapes_, crop=True)
@@ -265,9 +251,7 @@ def create_dmp(io, output):
             })
 
             # create final output directory
-            outdir = s1_slc.project_dir.joinpath('Damage_Proxy_Map')
-            outdir.mkdir(parents=True, exist_ok=True)
-            out_ds_tif = outdir.joinpath(f"ccd_{track_name}_{'_'.join(dates)}.tif")
+            out_ds_tif = project_dir/f"ccd_{track_name}_{'_'.join(dates)}.tif"
             with rio.open(out_ds_tif, "w", **out_meta) as dest:
                 dest.write(out_image)
 
@@ -292,7 +276,7 @@ def create_dmp(io, output):
             f.writelines(ct)
             f.close()
 
-            out_dmp_tif = outdir.joinpath(f"dmp_{track_name}_{'_'.join(dates)}.tif")
+            out_dmp_tif = project_dir/f"dmp_{track_name}_{'_'.join(dates)}.tif"
             demopts = gdal.DEMProcessingOptions(colorFilename=str(ctfile), addAlpha=True)
             gdal.DEMProcessing(str(out_dmp_tif), str(out_ds_tif), 'color-relief', options=demopts)         
 
@@ -348,30 +332,18 @@ def create_dmp(io, output):
                 image = src.read()
                 mask = image != 0
 
-                results = (
-                        {
-                            'properties': {'raster_val': v},
-                            'geometry': s
-                        }
-                        for i, (s, v)
-                        in enumerate(
-                            shapes(image, mask=mask, transform=src.transform)
-                        )
-                )
+                geoms = [
+                    {'properties': {'raster_val': v}, 'geometry': s}
+                    for i, (s, v) in enumerate(shapes(image, mask=mask, transform=src.transform))
+                ]
 
-            geoms = list(results)  
+            #geoms = list(results)  
             gpd_polygonized_raster  = gpd.GeoDataFrame.from_features(geoms)
             gpd_polygonized_raster['geometry'] = gpd_polygonized_raster['geometry'].centroid
             gpd_polygonized_raster.to_file(out_dmp_tif.with_suffix('.geojson'), driver='GeoJSON')
             
-            # delete downloads
-            try:
-                remove_folder_content(s1_slc.download_dir)
-                remove_folder_content(s1_slc.processing_dir)
-            except:
-                pass
-            
         # -----------------------------------------
+        
     try:
         shutil.rmtree(s1_slc.download_dir)
         shutil.rmtree(s1_slc.processing_dir)  

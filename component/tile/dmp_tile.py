@@ -1,79 +1,53 @@
 from sepal_ui import sepalwidgets as sw 
 import ipyvuetify as v
+from sepal_ui.scripts import utils as su
 
-from component import widget as cw
 from component import parameter as pm
 from component.scripts import * 
 
 class DmpTile(sw.Tile):
     
-    def __init__(self, dmp_io):
+    def __init__(self, model, aoi_model):
         
         # gather the io as class attribute 
-        self.io = dmp_io
+        self.aoi_model = aoi_model
+        self.model = model
         
-        # create the widgets 
-        self.aoi = sw.Markdown(pm.aoi)
-        self.file_selector = sw.FileInput(label='Search File')
-        
-        self.date = sw.Markdown(pm.date)
+        # create widgets
         self.date_picker = sw.DatePicker(label='Disaster event date')
-        
-        self.scihub = sw.Markdown(pm.scihub)
-        self.username = v.TextField(
-            label = "Copernicus Scihub Username",
-            v_model = None
-        )
-        self.password = cw.PasswordField(label = "Copernicus Scihub Password")
-        
-        self.process = sw.Markdown(pm.process)
+        self.username = v.TextField(label = "Copernicus Scihub Username",v_model = None)
+        self.password = sw.PasswordField(label = "Copernicus Scihub Password")
         
         # bind them with the output 
-        self.output = sw.Alert() \
-            .bind(self.file_selector, self.io, 'file') \
-            .bind(self.date_picker, self.io, 'event') \
-            .bind(self.username, self.io, 'username') \
-            .bind(self.password.text_field, self.io, 'password', secret=True)
-        
-        self.btn = sw.Btn("Process")
+        self.model \
+            .bind(self.date_picker, 'event') \
+            .bind(self.username, 'username') \
+            .bind(self.password, 'password')
         
         # construct the tile 
         super().__init__(
             id_ = "process_widget",
             title = "Set input parameters",
-            inputs = [
-                self.aoi, self.file_selector, 
-                self.date, self.date_picker, 
-                self.scihub, self.username, self.password,
-                self.process
-            ],
-            output = self.output,
-            btn = self.btn
+            inputs = [self.date_picker, self.username, self.password],
+            alert = sw.Alert(),
+            btn = sw.Btn("Process")
         )
         
         # link the click to an event 
         self.btn.on_event('click', self._on_click)
-        
+    
+    @su.loading_button(debug=False)
     def _on_click(self, widget, data, event):
         
-        widget.toggle_loading()
-        
         ## check input file
-        if not self.output.check_input(self.io.file, 'no aoi file selected'): return widget.toggle_loading()
-        if not self.output.check_input(self.io.event, 'no event date selected'): return widget.toggle_loading()
-        if not self.output.check_input(self.io.username, 'no username'): return widget.toggle_loading()
-        if not self.output.check_input(self.io.password, 'no password'): return widget.toggle_loading()
+        if not self.alert.check_input(self.model.event, 'no event date selected'): return 
+        if not self.alert.check_input(self.model.username, 'no username'): return 
+        if not self.alert.check_input(self.model.password, 'no password'): return 
         
-        try:
-            check_computer_size(self.output)
-            create_dmp(self.io, self.output)
-        
-            self.output.add_live_msg('Computation complete', 'success')
-        
-        except Exception as e: 
-            self.output.add_live_msg(str(e), 'error')
-            
-        widget.toggle_loading()
-        
+        check_computer_size()
+        create_dmp(self.aoi_model, self.model, self.alert)
+
+        self.alert.add_live_msg('Computation complete', 'success')
+         
         return
         
