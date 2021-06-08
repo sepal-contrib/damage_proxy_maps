@@ -1,7 +1,7 @@
 ![title](https://raw.githubusercontent.com/ESA-PhiLab/OST_Notebooks/master/auxiliary/header_image.PNG)
 
 # damage proxy map
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Automatically produce Damage Proxy Maps based on Coherence Change Detection.
 
@@ -14,17 +14,18 @@ Module using the `sepal_ui` framework and an interactive **Voila** dashboard for
 
 ## Requirements
 
-A Copernicus Open Data Hub user account, valid for at least 7 days (https://scihub.copernicus.eu)
+- a Copernicus Open Data Hub user account, valid for at least 7 days (https://scihub.copernicus.eu)
 
 ## Inputs
 
--   AOI vector file
--   Diaster event date
+- AOI vector file
+
+- Diaster event date
 
 
 ## Outputs
 
--   GeoTiff of original CCD values
--   Pseudocoloured GeoTiff DPM map file
--   Pseudocoloured KMZ DPM map file
--   GeoJSON DPM point layer with CCD values
+- GeoTiff of original CCD values
+- Pseudocoloured GeoTiff DPM map file
+- Pseudocoloured KMZ DPM map file
+- GeoJSON DPM point layer with CCD values
