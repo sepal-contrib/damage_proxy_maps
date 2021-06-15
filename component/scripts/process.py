@@ -19,6 +19,7 @@ from rasterio.features import shapes
 import geemap
 
 from ost import Sentinel1Batch
+from ost.helpers import scihub
 
 from component import parameter as pm
 
@@ -42,39 +43,67 @@ def check_computer_size():
 def create_dmp(aoi_model, model, output):
     
     # create start date from 60 days before
-    event_date = dt.strptime(io.event, '%Y-%m-%d')
+    event_date = dt.strptime(model.event, '%Y-%m-%d')
     
     start = dt.strftime(event_date + timedelta(days=-60), '%Y-%m-%d')
     end = dt.strftime((event_date + timedelta(days=+30)), '%Y-%m-%d') 
     
     # define project dir 
-    project_dir = pm.result_dir/f'{io.event}_{aoi_model.name}'
+    project_dir = pm.result_dir/f'{model.event}_{aoi_model.name}'
     
     output.add_live_msg(' Setting up project')
     
+    aoi = aoi_model.gdf.dissolve().geometry.to_wkt().values[0]
+    
     s1_slc = Sentinel1Batch(
         project_dir=project_dir,
-        aoi = aoi_model.gdf.to_wkt(),
+        aoi = aoi,
         start = start,
         end = end,
         product_type='SLC',
         ard_type='OST-RTC'
     )
-
+    
+     # set tmp_dir
+    s1_slc.temp_dir = pm.tmp_dir
+    s1_slc.config_dict['temp_dir'] = pm.tmp_dir
+    
+    
+    ## we get available ram
+    #with open('/proc/meminfo') as f:
+    #    meminfo = f.read()
+    #    matched = re.search(r'^MemTotal:\s+(\d+)', meminfo)
+    #    
+    #if matched: 
+    #    mem_total_kB = int(matched.groups()[0])
+    #
+    ## if we have more than 100GB ram we download there, 
+    ## that should speed up processing
+    #if mem_total_kB/1024/1024 > 100:
+    #    print('Using ramdisk')
+    #    s1_slc.download_dir = '/ram/download'
+    #    Path(s1_slc.download_dir).mkdir(parents=True, exist_ok=True)
+    #    s1_slc.config_dict['download_dir'] = s1_slc.download_dir
+    #
     # get username and password
-    if io.username and io.password:
-        s1_slc.scihub_uname = io.username
-        s1_slc.scihub_pword = io.password 
+    from ost.helpers.settings import HERBERT_USER
+    
+    if model.username and model.password:
+        s1_slc.scihub_uname = model.username
+        s1_slc.scihub_pword = model.password 
     else:
-        from ost.helpers.settings import HERBERT_USER
         s1_slc.scihub_uname = HERBERT_USER['uname']
         s1_slc.scihub_pword = HERBERT_USER['pword']
-
+    
+    s1_slc.asf_uname = HERBERT_USER['uname']
+    s1_slc.asf_pword = HERBERT_USER['asf_pword']
+    
     output.add_live_msg(' Searching for data')
+    
     s1_slc.search(base_url='https://scihub.copernicus.eu/dhus/')
     #s1_slc.inventory_file = s1_slc.inventory_dir.joinpath('full.inventory.gpkg')
     #s1_slc.read_inventory() 
-
+    
     for i, track in enumerate(s1_slc.inventory.relativeorbit.unique()):
         # filter by track
         df = s1_slc.inventory[s1_slc.inventory.relativeorbit == track].copy()
@@ -130,7 +159,15 @@ def create_dmp(aoi_model, model, output):
         #    )
 
         output.add_live_msg(' Downloading relevant Sentinel-1 SLC scenes ... (this may take a while)')
-        s1_slc.download(final_df, mirror=1, concurrent=2, uname=s1_slc.scihub_uname, pword=s1_slc.scihub_pword)
+        try:
+            s1_slc.download(final_df, mirror=2, concurrent=10, uname=s1_slc.asf_uname, pword=s1_slc.asf_pword)
+        except:
+            print('here')
+            scihub.batch_download(
+                final_df, s1_slc.download_dir, s1_slc.scihub_uname , s1_slc.scihub_pword, 
+                concurrent=2, base_url='https://scihub.copernicus.eu/dhus'
+            )
+        
         output.add_live_msg(' Create burst inventory')
         s1_slc.create_burst_inventory(final_df)
 
@@ -152,9 +189,6 @@ def create_dmp(aoi_model, model, output):
         s1_slc.ard_parameters['time-series_ARD']['mt_speckle_filter']['filter'] = 'Boxcar'
         s1_slc.ard_parameters['time-series_ARD']['remove_mt_speckle'] = True
         s1_slc.ard_parameters['mosaic']['cut_to_aoi'] = True
-
-        # set tmp_dir
-        s1_slc.config_dict['temp_dir'] = str(pm.tmp_dir)
 
         #
         workers = int(4) if os.cpu_count()/4 > 4 else int(os.cpu_count()/4)
@@ -180,32 +214,38 @@ def create_dmp(aoi_model, model, output):
             # we create the CCD for each burst 
             for burst in bursts:
                 track_name = burst.name[:4]
+                
+                try:
+                    coh_1 = list(burst.glob('Timeseries/01.*coh.VV.tif'))[0]
+                    coh_2 = list(burst.glob('Timeseries/02.*coh.VV.tif'))[0]
+                    dates = sorted(
+                        [coh_1.name.split('.')[1], 
+                         coh_1.name.split('.')[2], 
+                         coh_2.name.split('.')[2]]
+                    )
+                    dst_file = burst.joinpath(f"Timeseries/ccd_{burst.name}_{'_'.join(dates)}.tif")
 
-                coh_1 = list(burst.glob('Timeseries/01.*coh.VV.tif'))[0]
-                coh_2 = list(burst.glob('Timeseries/02.*coh.VV.tif'))[0]
-                dates = sorted(
-                    [coh_1.name.split('.')[1], 
-                     coh_1.name.split('.')[2], 
-                     coh_2.name.split('.')[2]]
-                )
-                dst_file = burst.joinpath(f"Timeseries/ccd_{burst.name}_{'_'.join(dates)}.tif")
+                    with rio.open(coh_1) as pre_coh:
+                        pre_arr = pre_coh.read()
+                        meta = pre_coh.meta
+                        meta.update(dtype='uint8', nodata=0)
 
-                with rio.open(coh_1) as pre_coh:
-                    pre_arr = pre_coh.read()
+                    with rio.open(coh_2) as post_coh:
 
-                with rio.open(coh_2) as post_coh:
+                        post_arr = post_coh.read()
+                        coh_diff = np.subtract(pre_arr, post_arr)
+                        coh_diff[coh_diff < 0.27] = 0
+                        coh_diff = coh_diff * 100
+                    
+                    
+                    with rio.open(dst_file, 'w', **meta) as dst:
+                        dst.write(coh_diff.astype('uint8'))
+                
+                except:
+                    pass
 
-                    post_arr = post_coh.read()
-                    coh_diff = np.subtract(pre_arr, post_arr)
-                    coh_diff[coh_diff < 0.27] = 0
-                    coh_diff = coh_diff * 100
 
-
-                    meta = pre_coh.meta
-                    meta.update(dtype='uint8', nodata=0)
-
-                with rio.open(dst_file, 'w', **meta) as dst:
-                    dst.write(coh_diff.astype('uint8'))
+                    
 
             # -----------------------------------------
             # and merge the result
@@ -251,7 +291,9 @@ def create_dmp(aoi_model, model, output):
             })
 
             # create final output directory
-            out_ds_tif = project_dir/f"ccd_{track_name}_{'_'.join(dates)}.tif"
+            dpm_out_dir = project_dir/f"Damage_Proxy_Maps"
+            dpm_out_dir.mkdir(parents=True, exist_ok=True)
+            out_ds_tif = dpm_out_dir/f"ccd_{track_name}_{'_'.join(dates)}.tif"
             with rio.open(out_ds_tif, "w", **out_meta) as dest:
                 dest.write(out_image)
 
@@ -276,12 +318,12 @@ def create_dmp(aoi_model, model, output):
             f.writelines(ct)
             f.close()
 
-            out_dmp_tif = project_dir/f"dmp_{track_name}_{'_'.join(dates)}.tif"
+            out_dpm_tif = dpm_out_dir/f"dpm_{track_name}_{'_'.join(dates)}.tif"
             demopts = gdal.DEMProcessingOptions(colorFilename=str(ctfile), addAlpha=True)
-            gdal.DEMProcessing(str(out_dmp_tif), str(out_ds_tif), 'color-relief', options=demopts)         
+            gdal.DEMProcessing(str(out_dpm_tif), str(out_ds_tif), 'color-relief', options=demopts)         
 
             opts = gdal.TranslateOptions(format='KMLSUPEROVERLAY', creationOptions=["format=png"])
-            gdal.Translate(str(out_dmp_tif.with_suffix('.kmz')), str(out_dmp_tif), options=opts)
+            gdal.Translate(str(out_dpm_tif.with_suffix('.kmz')), str(out_dpm_tif), options=opts)
 
             ### adding legend like this to KMZ
             #added = [
@@ -340,8 +382,18 @@ def create_dmp(aoi_model, model, output):
             #geoms = list(results)  
             gpd_polygonized_raster  = gpd.GeoDataFrame.from_features(geoms)
             gpd_polygonized_raster['geometry'] = gpd_polygonized_raster['geometry'].centroid
-            gpd_polygonized_raster.to_file(out_dmp_tif.with_suffix('.geojson'), driver='GeoJSON')
+            gpd_polygonized_raster.to_file(out_dpm_tif.with_suffix('.geojson'), driver='GeoJSON')
             
+            # remove storage intense files
+            try:
+                [file.unlink() for file in Path(s1_slc.download_dir).glob('**/*zip')]
+                [file.unlink() for file in Path(s1_slc.download_dir).glob('**/*downloaded')]
+                [file.unlink() for file in Path(s1_slc.processing_dir).glob('**/*img')]
+                [file.unlink() for file in Path(s1_slc.processing_dir).glob('**/*tif')]
+                [file.unlink() for file in Path(s1_slc.processing_dir).glob('**/*processed')]
+                
+            except:
+                pass
         # -----------------------------------------
         
     try:
