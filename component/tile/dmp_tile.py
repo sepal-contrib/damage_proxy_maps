@@ -44,7 +44,7 @@ class DmpTile(sw.Tile):
         if not self.alert.check_input(self.model.username, 'no username'): return 
         if not self.alert.check_input(self.model.password, 'no password'): return 
         
-        check_computer_size()
+        #check_computer_size()
         create_dmp(self.aoi_model, self.model, self.alert)
 
         self.alert.add_live_msg('Computation complete', 'success')
