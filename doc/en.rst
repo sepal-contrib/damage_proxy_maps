@@ -39,6 +39,6 @@ Clicking this button will trigger the full workflow. Some of the steps may take 
 
     If the processing did not finish, you can re-run the module with the same parameters, and the processing will continue from where it stopped.
     
-Once the computation is finished the result files will be stored in the :code:`module_results/Damage_proxy_map/<aoi name>_<event date>/`folder. 
+Once the computation is finished the result files will be stored in the :code:`module_results/Damage_proxy_map/<aoi name>_<event date>/` folder. 
 
 .. figure:: https://raw.githubusercontent.com/BuddyVolly/damage_proxy_maps/main/doc/img/complete.png 

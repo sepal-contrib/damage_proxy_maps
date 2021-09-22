@@ -12,7 +12,7 @@ import numpy as np
 import pyproj
 import geopandas as gpd
 import fiona
-import gdal
+from osgeo import gdal
 import rasterio as rio
 from rasterio.merge import merge
 from rasterio.features import shapes
