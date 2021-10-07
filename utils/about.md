@@ -1,8 +1,6 @@
 <img src="https://raw.githubusercontent.com/ESA-PhiLab/OST_Notebooks/master/auxiliary/header_image.PNG" height="200px">
 
-### Damage Proxy Maps based on Coherence Change Detection.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
+### Damage Proxy Maps based on Coherence Change Detection. 
 
 This module provides a fully-automated workflow for the creation of Damage Proxy Maps based on the method of Coherent Change Detection (CCD) with Sentinel-1 SLC data as described by [Tay et al. 2020](https://www.nature.com/articles/s41597-020-0443-5). 
 
