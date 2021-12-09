@@ -2,6 +2,7 @@
 
 # damage proxy map
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Black badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Automatically produce Damage Proxy Maps based on Coherence Change Detection.
 
