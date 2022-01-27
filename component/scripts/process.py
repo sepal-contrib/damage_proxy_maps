@@ -19,7 +19,7 @@ from rasterio.features import shapes
 import geemap
 
 from ost import Sentinel1Batch
-from ost.helpers import scihub
+from ost.helpers import scihub, srtm
 
 from component import parameter as pm
 
@@ -212,6 +212,10 @@ def create_dmp(aoi_model, model, output):
 
         # resampling of image (not so important)
         s1_slc.ard_parameters["single_ARD"]["dem"][
+            "dem_name"
+        ] = "SRTM 1Sec HGT"  # 'BILINEAR_INTERPOLATION'
+
+        s1_slc.ard_parameters["single_ARD"]["dem"][
             "image_resampling"
         ] = "BICUBIC_INTERPOLATION"  # 'BILINEAR_INTERPOLATION'
 
@@ -227,7 +231,11 @@ def create_dmp(aoi_model, model, output):
         output.add_live_msg(f" We process {workers} bursts in parallel.")
         s1_slc.config_dict["max_workers"] = workers
         s1_slc.config_dict["executor_type"] = "concurrent_processes"
-
+        
+        # pre-download SRTM
+        srtm.download_srtm(s1_slc.aoi)
+        
+        
         # process
         output.add_live_msg("Processing... (this may take a while)")
         s1_slc.bursts_to_ards(
