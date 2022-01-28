@@ -21,7 +21,7 @@ sepal_ui==2.4.0
 Fiona==1.8.20
 geopandas==0.10.2
 ipyvuetify==1.8.1
-numpy==1.18.5
+numpy==1.22.1
 opensartoolkit==0.12.5
 #ost==0.1.dev13 # was this by mistake
 rasterio==1.1.5
