@@ -23,7 +23,7 @@ geopandas==0.10.2
 ipyvuetify==1.8.1
 numpy==1.17.4
 opensartoolkit==0.12.5
-ost==0.1.dev13
+#ost==0.1.dev13 # was this by mistake
 rasterio==1.1.5
 traitlets==5.1.1
 cryptography>=2.1.4
