@@ -18,15 +18,14 @@ git+https://github.com/openforis/earthengine-api.git@v0.1.270#egg=earthengine-ap
 sepal_ui==2.6.2
 
 # custom libs
-ipyleaflet<=0.13.3 # to meet geemap 0.8.9 requirements
-click<8,>=4.0 # to stay inlined with ipywidgets
-ipywidgets==7.6.5 # cannot use newer version there are not compatible with voila 3.1.0
+ipyleaflet<=0.13.3
+click<8,>=4.0
+ipywidgets==7.6.5 
 Fiona==1.8.20
 geopandas==0.10.2
 ipyvuetify==1.8.1
 numpy==1.22.1
 opensartoolkit==0.12.5
-#ost==0.1.dev13 # was this by mistake
 rasterio==1.1.5
 traitlets==5.1.1
 cryptography>=2.1.4
