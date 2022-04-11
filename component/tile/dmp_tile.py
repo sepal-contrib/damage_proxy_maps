@@ -14,12 +14,13 @@ class DmpTile(sw.Tile):
         self.model = model
 
         # create widgets
-        self.date_picker = sw.DatePicker(label="Disaster event date")
+        self.date_picker_start = sw.DatePicker(label="Start of event")
+        self.date_picker_end = sw.DatePicker(label="End of event")
         self.username = v.TextField(label="Copernicus Scihub Username", v_model=None)
         self.password = sw.PasswordField(label="Copernicus Scihub Password")
 
         # bind them with the output
-        self.model.bind(self.date_picker, "event").bind(self.username, "username").bind(
+        self.model.bind(self.date_picker_start, "event_start").bind(self.date_picker_end, "event_end").bind(self.username, "username").bind(
             self.password, "password"
         )
 
@@ -27,7 +28,7 @@ class DmpTile(sw.Tile):
         super().__init__(
             id_="process_widget",
             title="Set input parameters",
-            inputs=[self.date_picker, self.username, self.password],
+            inputs=[self.date_picker_start, self.date_picker_end, self.username, self.password],
             alert=sw.Alert(),
             btn=sw.Btn("Process"),
         )
@@ -39,7 +40,9 @@ class DmpTile(sw.Tile):
     def _on_click(self, widget, data, event):
 
         ## check input file
-        if not self.alert.check_input(self.model.event, "no event date selected"):
+        if not self.alert.check_input(self.model.event_start, "no start date selected"):
+            return
+        if not self.alert.check_input(self.model.event_end, "no end date selected"):
             return
         if not self.alert.check_input(self.model.username, "no username"):
             return
