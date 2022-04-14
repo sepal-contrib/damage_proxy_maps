@@ -7,6 +7,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 from pathlib import Path
 from zipfile import ZipFile
+import requests
 
 import numpy as np
 import pyproj
@@ -138,7 +139,7 @@ def create_dmp(aoi_model, model, output):
             
             # cehck if we have an image after end date
             if datelist[-1] < event_end:
-                 output.add_live_msg(f' No image available after the end date for track {track}')
+                output.add_live_msg(f' No image available after the end date for track {track}')
                 break
                 
             # ignore dates before start of event
@@ -148,7 +149,7 @@ def create_dmp(aoi_model, model, output):
             # get index of date in datelist
             idx = datelist.index(date)
             if idx < 2:
-                 output.add_live_msg(f' Not enough pre-event images available for track {track}')
+                output.add_live_msg(f' Not enough pre-event images available for track {track}')
                 break
             
             # add dates to process list, if not already there
@@ -160,15 +161,13 @@ def create_dmp(aoi_model, model, output):
                 break
         
             if len(to_process_list) < 3:
-                 output.add_live_msg(f' Not enough images available for track {track}')
+                output.add_live_msg(f' Not enough images available for track {track}')
                 break
 
         # turn the dates back to strings so we can use to filter the data inventory
         final_dates = [dt.strftime(date, '%Y%m%d') for date in to_process_list]
-        final_df = s1_slc.inventory[
-            (s1_slc.inventory.acquisitiondate.isin(final_dates)) &
-            (s1_slc.inventory.relativeorbit == track)
-        ]
+        final_df = df[df.acquisitiondate.isin(final_dates)]
+        
         output.add_live_msg(
             " Downloading relevant Sentinel-1 SLC scenes ... (this may take a while)"
         )
@@ -209,7 +208,7 @@ def create_dmp(aoi_model, model, output):
 
         # set number of parallel processing 
         workers = int(4) if os.cpu_count() / 4 > 4 else int(os.cpu_count() / 4)
-        output.add_live_msg(f" We process {workers} bursts in parallel.")
+        output.add_live_msg(f" Processing {workers} bursts in parallel.")
         s1_slc.config_dict["max_workers"] = workers
         s1_slc.config_dict["executor_type"] = "concurrent_processes"
         
@@ -220,7 +219,7 @@ def create_dmp(aoi_model, model, output):
         srtm.download_srtm(s1_slc.aoi)
         
         # process
-        output.add_live_msg("Processing... (this may take a while)")
+        output.add_live_msg(" Processing scenes... (this may take a while)")
         s1_slc.bursts_to_ards(
             timeseries=True, 
             timescan=True, 
@@ -229,7 +228,7 @@ def create_dmp(aoi_model, model, output):
         )
         
         
-        output.add_live_msg("calculate change and merge results")
+        output.add_live_msg(" Calculate coherent change for each burst")
         bursts = list(s1_slc.processing_dir.glob(f'[A,D]*{track}*'))
         
         for burst in bursts:
