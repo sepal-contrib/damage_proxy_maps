@@ -24,6 +24,16 @@ from ost.helpers import scihub, srtm
 from component import parameter as pm
 
 
+def check_product_on_asf(identifier, uname, pword):
+    
+    url = f"https://datapool.asf.alaska.edu/SLC/SA/{identifier}.zip"
+    with requests.Session() as session:
+        session.auth = (uname, pword)
+        request = session.request("get", url)
+        response = session.get(request.url, auth=(uname, pword), stream=True)
+        return response.status_code
+    
+    
 def check_computer_size():
     """check if the computer size will match the reuirements of the app"""
 
@@ -46,6 +56,7 @@ def check_computer_size():
 
 def create_dmp(aoi_model, model, output):
 
+    output.add_live_msg('Initializing DPM creation')
     # create start date from 60 days before
     event_start = dt.strptime(model.event_start, "%Y-%m-%d")
     event_end = dt.strptime(model.event_end, "%Y-%m-%d")
@@ -60,10 +71,9 @@ def create_dmp(aoi_model, model, output):
     else:
         project_dir = pm.result_dir / f"{aoi_model.name}_{model.event_start}_{model.event_end}"
 
-    output.add_live_msg(" Setting up project")
-
     aoi = aoi_model.gdf.dissolve().geometry.to_wkt().values[0]
-
+    
+    output.add_live_msg(" Setting up OST project")
     s1_slc = Sentinel1Batch(
         project_dir=project_dir,
         aoi=aoi,
@@ -114,7 +124,13 @@ def create_dmp(aoi_model, model, output):
         
         # filter by track
         df = s1_slc.inventory[s1_slc.inventory.relativeorbit == track].copy()
-
+        
+        # make sure all products are on ASF
+        for i, row in df.iterrows():
+            status = check_product_on_asf(row.identifier, s1_slc.asf_uname, s1_slc.asf_pword)
+            if status != 200:
+                df = df[df.identifier != row.identifier]
+                
         # get all acquisitions dates for that track
         datelist = sorted([dt.strptime(date, '%Y%m%d') for date in df.acquisitiondate.unique()])
         to_process_list = []
@@ -122,7 +138,7 @@ def create_dmp(aoi_model, model, output):
             
             # cehck if we have an image after end date
             if datelist[-1] < event_end:
-                print(f' No image available after the end date for track {track}', 'warning')
+                 output.add_live_msg(f' No image available after the end date for track {track}')
                 break
                 
             # ignore dates before start of event
@@ -132,7 +148,7 @@ def create_dmp(aoi_model, model, output):
             # get index of date in datelist
             idx = datelist.index(date)
             if idx < 2:
-                print(f' Not enough pre-event images available for track {track}', 'warning')
+                 output.add_live_msg(f' Not enough pre-event images available for track {track}')
                 break
             
             # add dates to process list, if not already there
@@ -144,7 +160,7 @@ def create_dmp(aoi_model, model, output):
                 break
         
             if len(to_process_list) < 3:
-                print(f' Not enough images available for track {track}', 'warning')
+                 output.add_live_msg(f' Not enough images available for track {track}')
                 break
 
         # turn the dates back to strings so we can use to filter the data inventory
@@ -156,24 +172,14 @@ def create_dmp(aoi_model, model, output):
         output.add_live_msg(
             " Downloading relevant Sentinel-1 SLC scenes ... (this may take a while)"
         )
-        try:
-            s1_slc.download(
-                final_df,
-                mirror=2,
-                concurrent=10,
-                uname=s1_slc.asf_uname,
-                pword=s1_slc.asf_pword,
-            )
-        except:
-            scihub.batch_download(
-                final_df,
-                s1_slc.download_dir,
-                s1_slc.scihub_uname,
-                s1_slc.scihub_pword,
-                concurrent=2,
-                base_url="https://scihub.copernicus.eu/dhus",
-            )
-
+        s1_slc.download(
+            final_df,
+            mirror=2,
+            concurrent=10,
+            uname=s1_slc.asf_uname,
+            pword=s1_slc.asf_pword,
+        )
+        
         output.add_live_msg(" Create burst inventory")
         s1_slc.create_burst_inventory(final_df)
 
@@ -215,8 +221,6 @@ def create_dmp(aoi_model, model, output):
         
         # process
         output.add_live_msg("Processing... (this may take a while)")
-        # process
-        print("Processing... (this may take a while)")
         s1_slc.bursts_to_ards(
             timeseries=True, 
             timescan=True, 
@@ -225,7 +229,7 @@ def create_dmp(aoi_model, model, output):
         )
         
         
-        print("calculate change and merge results")
+        output.add_live_msg("calculate change and merge results")
         bursts = list(s1_slc.processing_dir.glob(f'[A,D]*{track}*'))
         
         for burst in bursts:
