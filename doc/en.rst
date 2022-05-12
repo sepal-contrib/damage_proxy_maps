@@ -23,7 +23,7 @@ Select an AOI
 
 Using the provided AOI selector, select an AOI of your choice between the different methods available in the tool. We provide 3 administration descriptions (from level 0 to 2) and 3 custom shapes (drawn directly on the map or ogr compatible files). 
 
-.. figure:: https://raw.githubusercontent.com/BuddyVolly/damage_proxy_maps/main/doc/img/aoi_select.png 
+.. figure:: https://raw.githubusercontent.com/sepal-contrib/damage_proxy_maps/main/doc/img/aoi_select.png 
     
     aoi selector
     
@@ -41,4 +41,4 @@ Clicking this button will trigger the full workflow. Some of the steps may take 
     
 Once the computation is finished the result files will be stored in the :code:`module_results/Damage_proxy_map/<aoi name>_<event date>/` folder. 
 
-.. figure:: https://raw.githubusercontent.com/BuddyVolly/damage_proxy_maps/main/doc/img/complete.png 
+.. figure:: https://raw.githubusercontent.com/sepal-contrib/damage_proxy_maps/main/doc/img/complete.png 
