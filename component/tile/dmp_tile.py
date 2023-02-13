@@ -2,6 +2,7 @@ from sepal_ui import sepalwidgets as sw
 import ipyvuetify as v
 from sepal_ui.scripts import utils as su
 
+from component.widget.date_picker import DatePicker
 from component import parameter as pm
 from component.scripts import *
 
@@ -14,8 +15,8 @@ class DmpTile(sw.Tile):
         self.model = model
 
         # create widgets
-        self.date_picker_start = sw.DatePicker(label="Start of event")
-        self.date_picker_end = sw.DatePicker(label="End of event")
+        self.date_picker_start = DatePicker(label="Start of event")
+        self.date_picker_end = DatePicker(label="End of event")
         self.username = v.TextField(label="Copernicus Scihub Username", v_model=None)
         self.password = sw.PasswordField(label="Copernicus Scihub Password")
 
