@@ -44,3 +44,5 @@ Once the computation is finished, the result files will be stored in the :code:`
 .. figure:: https://raw.githubusercontent.com/sepal-contrib/damage_proxy_maps/main/doc/img/complete.png 
 
 .. custom-edit:: https://raw.githubusercontent.com/sepal-contrib/damage_proxy_maps/release/doc/en.rst
+
+.. custom-edit:: https://raw.githubusercontent.com/sepal-contrib/damage_proxy_maps/release/doc/en.rst
