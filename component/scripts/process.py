@@ -1,26 +1,21 @@
 import os
 import shutil
 import re
-import time
 
 from datetime import datetime as dt
 from datetime import timedelta
 from pathlib import Path
-from zipfile import ZipFile
 import requests
 
 import numpy as np
-import pyproj
 import geopandas as gpd
-import fiona
 from osgeo import gdal
 import rasterio as rio
 from rasterio.merge import merge
 from rasterio.features import shapes
-import geemap
 
 from ost import Sentinel1Batch
-from ost.helpers import scihub, srtm
+from ost.helpers import srtm
 
 from component import parameter as pm
 

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union
+from typing import Optional
 import traitlets as t
 
 
@@ -6,7 +6,7 @@ from datetime import datetime
 
 import ipyvuetify as v
 import sepal_ui.sepalwidgets as sw
-from traitlets import Bool, link, observe
+from traitlets import link, observe
 
 __all__ = ["DatePicker"]
 

@@ -3,7 +3,6 @@ import ipyvuetify as v
 from sepal_ui.scripts import utils as su
 
 from component.widget.date_picker import DatePicker
-from component import parameter as pm
 from component.scripts import *
 
 
