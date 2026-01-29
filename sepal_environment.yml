@@ -6,7 +6,6 @@ dependencies:
   - python=3.10
   - pyproj  # Always include to avoid PROJ conflicts
   - jupyter
-  - rasterio
   - fiona
   - geopandas
   - pip
@@ -15,3 +14,4 @@ dependencies:
     - sepal_ui==2.21.0
     - opensartoolkit
     - git+https://github.com/openforis/earthengine-api.git@v1.1.5rc0#egg=earthengine-api&subdirectory=python
+    - rasterio<=1.4.3
