@@ -8,10 +8,10 @@ dependencies:
   - jupyter
   - fiona
   - geopandas
+  - sepal-ui>=2.22.2,<3
+  - rasterio<=1.4.3
   - pip
-  - gdal=3.8.3
+  - gdal=3.10
   - pip:
-    - sepal_ui==2.21.0
     - opensartoolkit
     - git+https://github.com/openforis/earthengine-api.git@v1.1.5rc0#egg=earthengine-api&subdirectory=python
-    - rasterio<=1.4.3
